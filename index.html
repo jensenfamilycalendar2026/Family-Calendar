@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jensen Family Calendar</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; background: #0a0d13; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; overflow: hidden; }
+.display { background: #0f1117; color: #fff; height: 100vh; display: grid; grid-template-columns: 1fr 320px; grid-template-rows: auto 1fr; }
+.top-bar { grid-column: 1 / -1; background: #0a0d13; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; border-bottom: 0.5px solid rgba(255,255,255,0.08); }
+.date-block { display: flex; flex-direction: column; }
+.date-day { font-size: 12px; color: rgba(255,255,255,0.4); letter-spacing: 0.06em; text-transform: uppercase; }
+.date-full { font-size: 20px; font-weight: 500; color: #fff; }
+.clock { font-size: 36px; font-weight: 500; color: #fff; letter-spacing: -0.02em; }
+.member-strip { display: flex; gap: 20px; align-items: center; }
+.member { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 500; }
+.av-dad { background: #1a3a5c; color: #85b7eb; }
+.av-mom { background: #3a1a3a; color: #ed93b1; }
+.av-liam { background: #0f3a2a; color: #5dcaa5; }
+.av-emerson { background: #3a2a0a; color: #ef9f27; }
+.member-name { font-size: 10px; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 0.05em; }
+.top-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.sync-status { font-size: 11px; color: rgba(255,255,255,0.25); display: flex; align-items: center; gap: 6px; cursor: pointer; }
+.sync-dot { width: 6px; height: 6px; border-radius: 50%; background: #e24b4a; flex-shrink: 0; }
+.sync-dot.ok { background: #1d9e75; }
+.sync-dot.syncing { background: #ba7517; }
+.calendar-panel { padding: 16px 24px; display: flex; flex-direction: column; gap: 12px; overflow: hidden; }
+.month-nav { display: flex; align-items: center; justify-content: space-between; }
+.month-label { font-size: 15px; font-weight: 500; color: rgba(255,255,255,0.9); }
+.nav-btn { background: rgba(255,255,255,0.06); border: 0.5px solid rgba(255,255,255,0.12); color: rgba(255,255,255,0.6); border-radius: 6px; padding: 3px 12px; cursor: pointer; font-size: 16px; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.cal-header { font-size: 10px; color: rgba(255,255,255,0.28); text-align: center; padding: 3px 0; text-transform: uppercase; letter-spacing: 0.05em; }
+.cal-day { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 3px 2px; border-radius: 7px; cursor: pointer; user-select: none; }
+.cal-day:active { background: rgba(255,255,255,0.1); }
+.cal-day.today { background: rgba(55,138,221,0.18); }
+.cal-day.today .day-num { color: #85b7eb; font-weight: 500; }
+.cal-day.selected { background: rgba(55,138,221,0.32); border: 0.5px solid rgba(55,138,221,0.5); }
+.cal-day.other-month .day-num { color: rgba(255,255,255,0.14); }
+.day-num { font-size: 12px; color: rgba(255,255,255,0.72); }
+.dot-row { display: flex; gap: 2px; margin-top: 2px; flex-wrap: wrap; justify-content: center; }
+.dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+.dot-dad { background: #378add; } .dot-mom { background: #d4537e; }
+.dot-liam { background: #1d9e75; } .dot-emerson { background: #ba7517; }
+.dot-family { background: rgba(255,255,255,0.4); }
+.events-section { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.section-label { font-size: 10px; color: rgba(255,255,255,0.28); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; flex-shrink: 0; }
+.event-list { display: flex; flex-direction: column; gap: 6px; overflow-y: auto; flex: 1; }
+.event-item { display: flex; align-items: flex-start; gap: 10px; padding: 8px 10px; background: rgba(255,255,255,0.04); border-radius: 8px; border-left: 2.5px solid transparent; flex-shrink: 0; }
+.ev-dad { border-left-color: #378add; } .ev-mom { border-left-color: #d4537e; }
+.ev-liam { border-left-color: #1d9e75; } .ev-emerson { border-left-color: #ba7517; }
+.ev-family { border-left-color: rgba(255,255,255,0.3); }
+.event-time { font-size: 11px; color: rgba(255,255,255,0.32); white-space: nowrap; min-width: 46px; padding-top: 2px; }
+.event-title { font-size: 13px; color: rgba(255,255,255,0.85); line-height: 1.4; }
+.event-who { font-size: 11px; color: rgba(255,255,255,0.32); margin-top: 2px; }
+.right-panel { border-left: 0.5px solid rgba(255,255,255,0.07); display: flex; flex-direction: column; }
+.chores-panel { flex: 1; padding: 16px; overflow-y: auto; border-bottom: 0.5px solid rgba(255,255,255,0.07); }
+.chore-member { margin-bottom: 14px; }
+.chore-member-header { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+.chore-av { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 500; }
+.chore-member-name { font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.65); }
+.chore-item { display: flex; align-items: center; gap: 10px; padding: 7px 6px; cursor: pointer; border-radius: 6px; user-select: none; }
+.chore-item:active { background: rgba(255,255,255,0.05); }
+.chore-check { width: 20px; height: 20px; border-radius: 5px; border: 1.5px solid rgba(255,255,255,0.18); flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: background 0.15s, border-color 0.15s; }
+.chore-check.done { background: rgba(29,158,117,0.4); border-color: #1d9e75; }
+.chore-check.done::after { content: ''; display: block; width: 10px; height: 6px; border-left: 2px solid #5dcaa5; border-bottom: 2px solid #5dcaa5; transform: rotate(-45deg) translate(1px,-1px); }
+.chore-text { font-size: 13px; color: rgba(255,255,255,0.62); line-height: 1.4; }
+.chore-text.done { text-decoration: line-through; color: rgba(255,255,255,0.2); }
+.photo-panel { height: 130px; background: #0a0d13; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.photo-placeholder { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.photo-placeholder-label { font-size: 11px; color: rgba(255,255,255,0.18); }
+.signin-overlay { position: fixed; inset: 0; background: rgba(10,13,19,0.97); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; z-index: 100; }
+.signin-logo { font-size: 28px; font-weight: 500; color: #fff; }
+.signin-sub { font-size: 14px; color: rgba(255,255,255,0.38); text-align: center; max-width: 300px; line-height: 1.7; }
+.signin-btn { background: #fff; color: #111; border: none; border-radius: 8px; padding: 13px 28px; font-size: 15px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+.signin-note { font-size: 11px; color: rgba(255,255,255,0.18); text-align: center; max-width: 300px; line-height: 1.7; }
+</style>
+</head>
+<body>
+<div class="signin-overlay" id="signin-overlay">
+  <div class="signin-logo">Jensen Family Calendar</div>
+  <div class="signin-sub">Sign in with the Google account that holds your shared family calendar</div>
+  <button class="signin-btn" id="signin-btn">
+    <svg width="20" height="20" viewBox="0 0 18 18">
+      <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
+      <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z"/>
+      <path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/>
+      <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 8.29C4.672 6.163 6.656 3.58 9 3.58z"/>
+    </svg>
+    Sign in with Google
+  </button>
+  <div class="signin-note">Your calendar data stays between you and Google. Nothing is stored on any external server.</div>
+</div>
+<div class="display">
+  <div class="top-bar">
+    <div class="date-block">
+      <span class="date-day" id="weekday"></span>
+      <span class="date-full" id="datefull"></span>
+    </div>
+    <div class="member-strip">
+      <div class="member"><div class="avatar av-dad">D</div><span class="member-name">Dad</span></div>
+      <div class="member"><div class="avatar av-mom">M</div><span class="member-name">Mom</span></div>
+      <div class="member"><div class="avatar av-liam">L</div><span class="member-name">Liam</span></div>
+      <div class="member"><div class="avatar av-emerson">E</div><span class="member-name">Emerson</span></div>
+    </div>
+    <div class="top-right">
+      <div class="clock" id="clock"></div>
+      <div class="sync-status" onclick="fetchGCalEvents()">
+        <div class="sync-dot" id="sync-dot"></div>
+        <span id="sync-label">Not connected</span>
+      </div>
+    </div>
+  </div>
+  <div class="calendar-panel">
+    <div class="month-nav">
+      <button class="nav-btn" id="prev-btn">&#8249;</button>
+      <span class="month-label" id="month-label"></span>
+      <button class="nav-btn" id="next-btn">&#8250;</button>
+    </div>
+    <div class="cal-grid" id="cal-grid">
+      <div class="cal-header">Su</div><div class="cal-header">Mo</div><div class="cal-header">Tu</div>
+      <div class="cal-header">We</div><div class="cal-header">Th</div><div class="cal-header">Fr</div><div class="cal-header">Sa</div>
+    </div>
+    <div class="events-section">
+      <div class="section-label" id="events-label">Events</div>
+      <div class="event-list" id="event-list">
+        <div style="font-size:13px;color:rgba(255,255,255,0.2);padding:10px 0;">Sign in to load events</div>
+      </div>
+    </div>
+  </div>
+  <div class="right-panel">
+    <div class="chores-panel">
+      <div class="section-label">Chores this week</div>
+      <div id="chores-list"></div>
+    </div>
+    <div class="photo-panel">
+      <div class="photo-placeholder">
+        <svg width="36" height="36" viewBox="0 0 32 32" fill="none" style="opacity:0.15">
+          <rect x="2" y="6" width="28" height="20" rx="3" stroke="white" stroke-width="1.5"/>
+          <circle cx="11" cy="14" r="3" stroke="white" stroke-width="1.5"/>
+          <path d="M2 22l7-6 5 5 4-4 7 9" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
+        </svg>
+        <span class="photo-placeholder-label">Photo display</span>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+const CLIENT_ID = '52673620757-jvg2ecesg4n49sben6j6hopc1o62eevj.apps.googleusercontent.com';
+const SCOPES = 'https://www.googleapis.com/auth/calendar.readonly';
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+let CHORES = JSON.parse(localStorage.getItem('jfc_chores') || 'null') || [
+  { member: 'Dad', avClass: 'av-dad', initial: 'D', items: ['Take out trash', 'Mow lawn'], done: [false, false] },
+  { member: 'Mom', avClass: 'av-mom', initial: 'M', items: ['Groceries list', 'Laundry'], done: [false, false] },
+  { member: 'Liam', avClass: 'av-liam', initial: 'L', items: ['Clean room', 'Dishes'], done: [false, false] },
+  { member: 'Emerson', avClass: 'av-emerson', initial: 'E', items: ['Feed dog', 'Backpack packed'], done: [false, false] },
+];
+const today = new Date();
+let viewYear = today.getFullYear(), viewMonth = today.getMonth(), selectedDay = today.getDate();
+let gcalEvents = {}, accessToken = null, tokenClient;
+function saveChores() { localStorage.setItem('jfc_chores', JSON.stringify(CHORES)); }
+function detectMember(title) {
+  const t = (title || '').toLowerCase();
+  if (/^dad[\s\-:]/.test(t)) return 'dad';
+  if (/^mom[\s\-:]/.test(t)) return 'mom';
+  if (/^liam[\s\-:]/.test(t)) return 'liam';
+  if (/^emerson[\s\-:]/.test(t)) return 'emerson';
+  return 'family';
+}
+function cleanTitle(title) { return (title || 'Untitled').replace(/^(dad|mom|liam|emerson)\s*[\-:]\s*/i, '').trim(); }
+function eventKey(y, m, d) { return y + '-' + (m + 1) + '-' + d; }
+function setSyncStatus(state, label) {
+  const dot = document.getElementById('sync-dot');
+  dot.className = 'sync-dot' + (state === 'ok' ? ' ok' : state === 'syncing' ? ' syncing' : '');
+  document.getElementById('sync-label').textContent = label;
+}
+async function fetchGCalEvents() {
+  if (!accessToken) return;
+  setSyncStatus('syncing', 'Syncing...');
+  try {
+    const start = new Date(viewYear, viewMonth, 1).toISOString();
+    const end = new Date(viewYear, viewMonth + 1, 0, 23, 59, 59).toISOString();
+    const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${encodeURIComponent(start)}&timeMax=${encodeURIComponent(end)}&singleEvents=true&orderBy=startTime&maxResults=200`;
+    const res = await fetch(url, { headers: { Authorization: 'Bearer ' + accessToken } });
+    if (!res.ok) { setSyncStatus('error', 'Sync error'); return; }
+    const data = await res.json();
+    gcalEvents = {};
+    (data.items || []).forEach(ev => {
+      const isAllDay = !!ev.start.date && !ev.start.dateTime;
+      const dt = isAllDay ? new Date(ev.start.date + 'T00:00:00') : new Date(ev.start.dateTime);
+      const key = eventKey(dt.getFullYear(), dt.getMonth(), dt.getDate());
+      if (!gcalEvents[key]) gcalEvents[key] = [];
+      let timeStr = 'All day';
+      if (!isAllDay) {
+        let h = dt.getHours(), mn = dt.getMinutes(), ap = h >= 12 ? 'PM' : 'AM';
+        h = h % 12 || 12;
+        timeStr = h + ':' + String(mn).padStart(2, '0') + ' ' + ap;
+      }
+      const member = detectMember(ev.summary);
+      const label = member === 'family' ? 'Everyone' : member.charAt(0).toUpperCase() + member.slice(1);
+      gcalEvents[key].push({ time: timeStr, title: cleanTitle(ev.summary), who: label, type: member });
+    });
+    setSyncStatus('ok', 'Live - Google Calendar');
+    renderCal(); renderEvents();
+  } catch (e) { setSyncStatus('error', 'Sync failed - tap to retry'); }
+}
+function dotsFor(y, m, d) {
+  const evs = gcalEvents[eventKey(y, m, d)] || [];
+  const seen = new Set();
+  return evs.map(e => { if (seen.has(e.type)) return ''; seen.add(e.type); return `<div class="dot dot-${e.type}"></div>`; }).join('');
+}
+function renderCal() {
+  const grid = document.getElementById('cal-grid');
+  grid.querySelectorAll('.cal-day').forEach(d => d.remove());
+  document.getElementById('month-label').textContent = MONTHS[viewMonth] + ' ' + viewYear;
+  const firstDay = new Date(viewYear, viewMonth, 1).getDay();
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const daysInPrev = new Date(viewYear, viewMonth, 0).getDate();
+  let cells = [];
+  for (let i = firstDay - 1; i >= 0; i--) cells.push({ d: daysInPrev - i, cur: false });
+  for (let d = 1; d <= daysInMonth; d++) cells.push({ d, cur: true });
+  while (cells.length % 7 !== 0) cells.push({ d: cells.length - firstDay - daysInMonth + 1, cur: false });
+  cells.forEach(cell => {
+    const div = document.createElement('div');
+    div.className = 'cal-day' + (!cell.cur ? ' other-month' : '');
+    if (cell.cur && viewYear === today.getFullYear() && viewMonth === today.getMonth() && cell.d === today.getDate()) div.classList.add('today');
+    if (cell.cur && cell.d === selectedDay) div.classList.add('selected');
+    div.innerHTML = `<span class="day-num">${cell.d}</span><div class="dot-row">${cell.cur ? dotsFor(viewYear, viewMonth, cell.d) : ''}</div>`;
+    if (cell.cur) div.addEventListener('click', () => { selectedDay = cell.d; renderCal(); renderEvents(); });
+    grid.appendChild(div);
+  });
+}
+function renderEvents() {
+  const evs = gcalEvents[eventKey(viewYear, viewMonth, selectedDay)] || [];
+  document.getElementById('events-label').textContent = 'Events - ' + MONTHS[viewMonth] + ' ' + selectedDay;
+  const list = document.getElementById('event-list');
+  if (!accessToken) { list.innerHTML = '<div style="font-size:13px;color:rgba(255,255,255,0.2);padding:10px 0;">Sign in to load events</div>'; return; }
+  list.innerHTML = evs.length === 0
+    ? '<div style="font-size:13px;color:rgba(255,255,255,0.2);padding:10px 0;">No events</div>'
+    : evs.map(e => `<div class="event-item ev-${e.type}"><span class="event-time">${e.time}</span><div><div class="event-title">${e.title}</div><div class="event-who">${e.who}</div></div></div>`).join('');
+}
+function renderChores() {
+  document.getElementById('chores-list').innerHTML = CHORES.map((m, mi) => `
+    <div class="chore-member">
+      <div class="chore-member-header">
+        <div class="avatar chore-av ${m.avClass}" style="width:24px;height:24px;font-size:10px;">${m.initial}</div>
+        <span class="chore-member-name">${m.member}</span>
+      </div>
+      ${m.items.map((item, ii) => `
+        <div class="chore-item" onclick="toggleChore(${mi},${ii})">
+          <div class="chore-check ${m.done[ii] ? 'done' : ''}"></div>
+          <span class="chore-text ${m.done[ii] ? 'done' : ''}">${item}</span>
+        </div>`).join('')}
+    </div>`).join('');
+}
+function toggleChore(mi, ii) { CHORES[mi].done[ii] = !CHORES[mi].done[ii]; saveChores(); renderChores(); }
+function updateClock() {
+  const now = new Date();
+  document.getElementById('weekday').textContent = DAYS[now.getDay()];
+  document.getElementById('datefull').textContent = MONTHS[now.getMonth()] + ' ' + now.getDate() + ', ' + now.getFullYear();
+  let h = now.getHours(), mn = now.getMinutes(), ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12;
+  document.getElementById('clock').textContent = h + ':' + String(mn).padStart(2, '0') + ' ' + ampm;
+}
+function initGIS() {
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID, scope: SCOPES,
+    callback: (resp) => {
+      if (resp.error) { setSyncStatus('error', 'Auth failed'); return; }
+      accessToken = resp.access_token;
+      document.getElementById('signin-overlay').style.display = 'none';
+      fetchGCalEvents();
+      setInterval(fetchGCalEvents, 5 * 60 * 1000);
+    }
+  });
+  document.getElementById('signin-btn').addEventListener('click', () => { tokenClient.requestAccessToken(); });
+}
+document.getElementById('prev-btn').addEventListener('click', () => {
+  viewMonth--; if (viewMonth < 0) { viewMonth = 11; viewYear--; }
+  selectedDay = 1; renderCal(); renderEvents(); if (accessToken) fetchGCalEvents();
+});
+document.getElementById('next-btn').addEventListener('click', () => {
+  viewMonth++; if (viewMonth > 11) { viewMonth = 0; viewYear++; }
+  selectedDay = 1; renderCal(); renderEvents(); if (accessToken) fetchGCalEvents();
+});
+updateClock(); setInterval(updateClock, 30000);
+renderCal(); renderEvents(); renderChores();
+const gisScript = document.createElement('script');
+gisScript.src = 'https://accounts.google.com/gsi/client';
+gisScript.onload = initGIS;
+document.head.appendChild(gisScript);
+</script>
+</body>
+</html>
